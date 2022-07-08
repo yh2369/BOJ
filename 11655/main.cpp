@@ -48,7 +48,7 @@ int main()
 {
     string s;
     getline(cin, s);
-    cout << s << endl;
+    //cout << s << endl;
     auto ret = split(s, " ");
     string answer = "";
     for(int i=0; i<ret.size() - 1; i++)
