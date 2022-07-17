@@ -4,6 +4,7 @@
 
 using namespace std;
 
+vector<int> adj[54];
 typedef struct Node
 {
     int num;
@@ -123,6 +124,24 @@ int count_leaf(Node* root)
     return cnt;
 }
 
+int dfs(int here)
+{
+    if(adj[here].empty())
+    {
+        return 1;
+    }
+
+    int ret = 0;
+
+    for(int there : adj[here])
+    {
+        ret += dfs(there);
+    }
+    return ret;
+
+}
+
+
 int main()
 {
     ios_base::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);
@@ -130,66 +149,67 @@ int main()
     cin >> N;
     vector<int> parent_v(N, 0);
 
-    Node* root = new Node;
+    int root;
+    for(int i =0; i<54; i++)
+    {
+        adj[i] = vector<int>();
+    }
+
+
     for(int i =0; i<N; i++)
     {
         cin >> parent_v[i];
-    }
-
-    int added_nodes = 0;
-
-    for(int i = 0; i<N; i++)
-    {
         if(parent_v[i] == -1)
         {
-            root->num = i;
-            added_nodes++;
-            break;
+            root = i;
+        }        
+        else
+        {
+            adj[parent_v[i]].push_back(i);
         }
     }
 
-    for(int i = 0; i<N; i++)
+    /* print adj list
+    for(int i =0; i<N; i++)
     {
-        int parent_num = parent_v[i];
-        if(parent_num == root->num)
+        cout << "[" << i <<"]: ";
+        for(int j =0; j<adj[i].size(); j++)
         {
-            Node* child = new Node;
-            child->num = i;
-            root->children.push_back(child);
-            added_nodes++;
+            cout << adj[i][j] <<" ";
         }
+        cout << endl;
     }
-
-    
-    while(added_nodes < N)
-    {
-        for(int i = 0; i<N; i++)
-        {
-            int parent_num = parent_v[i];
-            if(parent_num == -1 || parent_num == root->num) continue; 
-            auto parent_node = find_node(root, parent_num);
-            if(parent_node == nullptr)
-            {
-                continue;
-            }
-            Node* child = new Node;
-            child->num = i;
-            auto children = parent_node->children;
-            if(find_child(children, child->num) == -1) 
-            { 
-                parent_node->children.push_back(child);
-                added_nodes++;
-            }
-        }
-    }
+    */
 
     int target;
     cin >> target;
 
-    root = remove_node(root, parent_v,  target);
+    if(target == root)
+    {
+        cout << 0 <<'\n';
+    }
+    else
+    {
+        for(int i = 0; i<N; i++)
+        {
+            if(i == target)
+            {
+                adj[i].clear();
+                continue;
+            }
 
-    cout << count_leaf(root) << '\n';
-    
-    delete_node(root);
+            for(auto it = adj[i].begin(); it != adj[i].end(); it++)
+            {
+                if(*it == target)
+                {
+                    adj[i].erase(it);
+                    break;
+                }
+            }
+        }
+
+        cout << dfs(root) << '\n';
+    }
+
     return 0;
 }
