@@ -36,6 +36,7 @@ void init_visited(Node* node);
 int calc_score(vector<int>& arr, vector<int>& dice_v, Node* start);
 Node* find_next_node(Node* current, int dice_num);
 Node* successor_node(Node* current);
+void init_pieces(Node* node);
 
 
 Node* create_node(Status status, int value, bool visited, Node* red_next, Node* blue_next)
@@ -106,6 +107,31 @@ void dfs(Node* node, stack<Node*> stk)
     
     stk.push(node);
 
+}
+void init_pieces(Node* node)
+{
+    if(node == nullptr)
+    {
+        assert(false);
+    }
+    node->pieces.clear();
+    switch (node->status)
+    {
+        case Status::START:
+            init_pieces(node->red_next);
+            break;
+        case Status::END:
+            break;
+        case Status::RED:
+            init_pieces(node->red_next);
+            break;
+        case Status::BLUE:
+            init_pieces(node->blue_next);
+            init_pieces(node->red_next);
+            break;
+        case Status::NOEDGE:
+            break;
+    }   
 }
 
 void init_visited(Node* node)
@@ -184,8 +210,8 @@ void print_node(Node* node)
 int calc_score(vector<int>& arr, vector<int>& dice_v, Node* start)
 {
     int score = 0;
-    cout << "[@@@@ calc_score() @@@@]\n";
-
+    //cout << "[@@@@ calc_score() @@@@]\n";
+    vector<bool> can_select_v(4, true);
     unordered_map<int, Node*> piece_map;
     piece_map.insert({0, start});
     piece_map.insert({1, start});
@@ -199,9 +225,13 @@ int calc_score(vector<int>& arr, vector<int>& dice_v, Node* start)
     Node* current = start;
     for(int i =0; i<10; i++)
     {
-        cout << "[" << i << "]\n";
         int dice_num = dice_v[i];
         int piece = arr[i];
+        //cout << "[" << i << "] dice_num: "<< dice_num << " piece: " << piece << "\n";
+        if(can_select_v[piece] == false)
+        {
+            return 0;
+        }
         auto it = piece_map.find(piece);
         if(it != piece_map.end())
         {
@@ -222,36 +252,52 @@ int calc_score(vector<int>& arr, vector<int>& dice_v, Node* start)
                     break;
             }
             auto next_node = find_next_node(current, dice_num);
-            cout << "[@@@ current @@@]"; print_node(current);
-            cout << "[@@@ next_node @@@]"; print_node(next_node);
+            //cout << "[@@@ current @@@]"; print_node(current);
+            //cout << "[@@@ next_node @@@]"; print_node(next_node);
             current->pieces.erase(piece);
-            current = next_node;
             piece_map[piece] = next_node;
-
-            switch (current->status)
+            switch (next_node->status)
             {
                 case Status::START:
                     break;
-                case Status::END:                     
+                case Status::END:                 
                     break;
                 case Status::RED:
-                    score += current->value;
+                    score += next_node->value;
                     break;
                 case Status::BLUE:
-                    score += current->value;
+                    score += next_node->value;
                     break;
                 case Status::NOEDGE:
-                    score += current->value;
+                    score += next_node->value;
                     break;
             }
-            current->pieces.insert(piece);
-            cout << "======================================================\n";
+
+            if(next_node->status == Status::END)
+            {
+                piece_map[piece] = next_node;
+                next_node->pieces.insert(piece);
+                piece_map[piece] = next_node;
+                can_select_v[piece] = false;
+            }
+            else
+            {
+                if(!next_node->pieces.empty())
+                {
+                    can_select_v[piece] = false;
+                    return 0;
+                }
+                next_node->pieces.insert(piece);
+                piece_map[piece] = next_node;
+            }
+
+            //cout << "======================================================\n";
 
 
         }
         else
         {
-            //assert(false);
+            assert(false);
         }
         
     }
@@ -283,7 +329,31 @@ Node* find_next_node(Node* current, int dice_num)
     Node* ret = current;
     for(int i = 0; i< dice_num; i++)
     {
-        ret = successor_node(ret);
+        switch (ret->status)
+        {
+        case Status::START:
+            ret = successor_node(ret);
+            break;
+        case Status::END:
+            continue;
+            break;
+        case Status::RED:
+            ret = successor_node(ret);
+            break;
+        case Status::BLUE:
+            if(i == 0)
+            {
+                ret = successor_node(ret);
+            }
+            else
+            {
+                ret = ret->red_next;
+            }
+            break;
+        case Status::NOEDGE:
+            continue;
+            break;
+        } 
     }
     return ret;
 }
@@ -334,7 +404,7 @@ int main()
     Node* n10 = create_node(Status::RED, 30, false, nullptr, nullptr);
     Node* n11 = create_node(Status::RED, 35, false, nullptr, nullptr);
     Node* n12 = create_node(Status::RED, 40, false, nullptr, nullptr);
-    Node* end = create_node(Status::END, 40, false, nullptr, nullptr);
+    Node* end = create_node(Status::END, 0, false, nullptr, nullptr);
     Node* n13 = create_node(Status::RED, 12, false, nullptr, nullptr);
     Node* n14 = create_node(Status::RED, 14, false, nullptr, nullptr);
     Node* n15 = create_node(Status::RED, 16, false, nullptr, nullptr);
@@ -396,7 +466,7 @@ int main()
     {
         cin >> dice_v[i];
     }
-
+    vector<int> max_combi(10, 0);
     for(int i0 = 0; i0< 4; i0++)
     {
         for(int i1 = 0; i1<4; i1++)
@@ -418,6 +488,7 @@ int main()
                                         for(int i9 = 0; i9<4; i9++)
                                         {
                                             vector<int> arr(10,0);
+                                            
                                             arr[0] = i0;
                                             arr[1] = i1;
                                             arr[2] = i2;
@@ -428,6 +499,22 @@ int main()
                                             arr[7] = i7;
                                             arr[8] = i8;
                                             arr[9] = i9;
+                                            
+
+                                            
+
+                                            /*
+                                            arr[0] = 3;
+                                            arr[1] = 3;
+                                            arr[2] = 3;
+                                            arr[3] = 3;
+                                            arr[4] = 3;
+                                            arr[5] = 3;
+                                            arr[6] = 3;
+                                            arr[7] = 3;
+                                            arr[8] = 3;
+                                            arr[9] = 3;
+                                            */
 
                                             /*
                                             for(int i = 0; i< 10; i++)
@@ -438,9 +525,27 @@ int main()
                                             */
 
                                             int score = calc_score(arr, dice_v, start);
-                                            init_visited(start);
-                                            max_score = max(score, max_score);
-                                            return 0;
+                                            //cout << score << "\n";
+                                            init_pieces(start);
+                                            
+
+                                            if(max_score < score)
+                                            {
+                                                max_score = score;
+                                                
+                                                max_combi[0] = i0;
+                                                max_combi[1] = i1;
+                                                max_combi[2] = i2;
+                                                max_combi[3] = i3;
+                                                max_combi[4] = i4;
+                                                max_combi[5] = i5;
+                                                max_combi[6] = i6;
+                                                max_combi[7] = i7;
+                                                max_combi[8] = i8;
+                                                max_combi[9] = i9;
+                                                
+                                            }
+                                            
                                         }
                                     }
                                 }
@@ -452,9 +557,14 @@ int main()
         }
     }
 
-
-
-    
+    /*
+    for(int i = 0; i<10; i++)
+    {
+        cout << max_combi[i] << " ";
+    }
+    cout << "\n";
+    */
+    cout << max_score << '\n';    
     delete_node(start);
 
 
