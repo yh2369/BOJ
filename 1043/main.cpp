@@ -47,28 +47,57 @@ int main()
     }
 
     //print2DV(party_table, M);
+    while(true)
+    {
+        int initial_truth_set_size = truth_set.size();
+        for(int i = 0; i<M; i++)
+        {
+            bool flag = false;
+            for(int j = 0; j<party_table[i].size(); j++)
+            {
+                int num = party_table[i][j];
+                if(truth_set.find(num) != truth_set.end())
+                {
+                    flag = true;
+                    break;
+                }
+            }
+            if(flag)
+            {
+                for(int j = 0; j<party_table[i].size(); j++)
+                {
+                    int num = party_table[i][j];
+                    truth_set.insert(num);
+                }
+            }
+        }
+        if (initial_truth_set_size==truth_set.size())
+        {
+            break;
+        }
+    }
 
+
+
+
+    int cnt = 0;
     for(int i = 0; i<M; i++)
     {
-        bool flag = false;
+        bool can_tell_lie = true;
         for(int j = 0; j<party_table[i].size(); j++)
         {
             int num = party_table[i][j];
             if(truth_set.find(num) != truth_set.end())
             {
-                flag = true;
+                can_tell_lie = false;
                 break;
             }
         }
-        if(flag)
+        if(can_tell_lie)
         {
-            for(int j = 0; j<party_table[i].size(); j++)
-            {
-                int num = party_table[i][j];
-                truth_set.insert(num);
-            }
+            cnt++;
         }
     }
-
+    cout << cnt << "\n";
     return 0;
 }
