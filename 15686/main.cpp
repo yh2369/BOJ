@@ -1,160 +1,78 @@
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <vector>
-#include <algorithm>
-#include <queue>
-#include<unordered_map>
-#include <utility>
-#include <functional>
-
 using namespace std;
 
-#define INF 987654321
-
-// Only for pairs of std::hash-able types for simplicity.
-// You can of course template this struct to allow other hash functions
-struct pair_hash
+struct Pos
 {
-    std::size_t operator () (const pair<int,int>& p) const {
-        auto h1 = std::hash<int>{}(p.first);
-        auto h2 = std::hash<int>{}(p.second);
-
-        // Mainly for demonstration purposes, i.e. works but is overly simple
-        // In the real world, use sth. like boost.hash_combine
-        return h1 ^ h2;  
-    }
+    int x, y;
 };
-
-struct pair_equal
-{
-    bool operator()(const pair<int,int>& lhs, const pair<int,int>& rhs) const
-    {
-        return (std::get<0>(lhs) == std::get<0>(rhs) && std::get<1>(lhs) == std::get<1>(rhs));
-    }
-};
-
-
 int N, M;
-int grid[51][51] ={0,};
-int chicken_house_num = 0;
-int to_remove;
-int total_chicken_distance = 0;
+int MIN = 987654321; // 출력할 도시의 치킨 거리 최솟값
+bool selected[13];
+vector<Pos> house_pos;
+vector<Pos> chicken_pos;
+vector<Pos> picked;
 
-
-void combi(int n, int k, int start, vector<int>&b, vector<vector<int>>& dst);
-
-
-void combi(int n, int k, int start, vector<int>&b, vector<vector<int>>& dst)
+int Distance(Pos a, Pos b)
 {
-    if(k == b.size())
-    {
-        dst.push_back(b);
-        return;
-    }
-
-    for(int i = start+1; i<n; i++)
-    {
-        b.push_back(i);
-        combi(n,k,start+1, b, dst);
-        b.pop_back();
-    }
-    return;
+    return abs(a.x - b.x) + abs(a.y - b.y);
 }
 
-void printV(vector<int>& v)
+void Find_Min_Dist()
 {
-    for(int i = 0; i<v.size(); i++)
+    int result = 0;
+    for (int i = 0; i < house_pos.size(); i++) // 각 집으로부터
     {
-        cout << v[i] <<" ";
+        int min_dist = 987654321;
+        for (int j = 0; j < picked.size(); j++) // 모든 고른 치킨집에 대해
+        {
+            min_dist = min(min_dist, Distance(house_pos[i], picked[j])); // 최소 치킨거리 찾아
+        }
+        result += min_dist; // 최소 도시의 치킨거리 구함
     }
-    cout << "\n";
+    MIN = min(MIN, result);
+}
+
+void Find_M_Combination(int x, int m)
+{
+    if (m == M)
+    { // M개 다 골랐으면 각 집으로부터 도시의 치킨거리가 최소인 치킨집 찾자
+        Find_Min_Dist();
+    }
+
+    // 치킨집 M개 고르자
+    for (int i = x; i < chicken_pos.size(); i++)
+    {
+        if (selected[i] == true)
+            continue; // 이미 확정된거면 패스
+
+        selected[i] = true;
+        picked.push_back({ chicken_pos[i].x, chicken_pos[i].y });
+        Find_M_Combination(i, m + 1);
+        selected[i] = false;
+        picked.pop_back();
+    }
 }
 
 int main()
 {
-    ios_base::sync_with_stdio(false); cin.tie(NULL); cout.tie(NULL);
-
-    // vector of (x,y) position of chicken house
-    vector<pair<int,int>> chicken_house_v;
-
-    // key: (x,y) position of house, value: chicken distance.
-    unordered_map<pair<int,int>, int, pair_hash, pair_equal> chicken_distance_table;
-    
+    // 입력
     cin >> N >> M;
-    for(int i = 1; i<=N; i++)
+    for (int i = 0; i < N; i++)
     {
-        for(int j = 1; j<=N; j++)
+        for (int j = 0; j < N; j++)
         {
-            cin >> grid[i][j];
-            if(grid[i][j] == 2)
-            {
-                chicken_house_num++;
-                chicken_house_v.push_back({i,j});
-            }
-            else if(grid[i][j] ==1)
-            {
-                auto key = make_pair(i,j);
-                chicken_distance_table.insert(make_pair(key, INF));
-            }
+            int tmp;
+            cin >> tmp;
+            if (tmp == 1)
+                house_pos.push_back({ i, j });
+            else if (tmp == 2)
+                chicken_pos.push_back({ i, j });
         }
     }
-
-    to_remove = chicken_house_num - M;
-
-
-    cout << "chicken_house_num: " << chicken_house_num << "\n";
-    cout << "to_remove: " << to_remove << "\n";
-
-
-
-    vector<int> b;
-    vector<vector<int>> dst;
-    combi(chicken_house_num, to_remove, -1, b, dst);
-    for(int i = 0; i<dst.size(); i++)
-    {
-        //printV(dst[i]);
-        //TODO: calculate sum of chicken distances
-        
-        // select #to_remove chicken houses
-        // remove chicken houses
-        
-        for(int j = 0; j<to_remove; j++)
-        {
-            auto index = dst[i][j];
-            auto chicken_house_pos = chicken_house_v[index];
-            int x=chicken_house_pos.first;
-            int y = chicken_house_pos.second;
-            //cout << "(" << x <<"," << y << ")\n";
-            
-            grid[x][y] = 0;
-        }
-
-        // calculate sum of chicken distances.
-        for(auto it = chicken_distance_table.begin(); it != chicken_distance_table.end(); it++)
-        {
-            auto key = it->first;
-            auto value = it->second;
-            cout << "[@@@ house position: (" << key.first << "," << key.second << ") @@@]\n";
-        }
-        cout << "===========================================================================\n";
-
-
-        // rebuild chicken houses
-        for(int j = 0; j<to_remove; j++)
-        {
-            auto index = dst[i][j];
-            auto chicken_house_pos = chicken_house_v[index];
-            int x=chicken_house_pos.first;
-            int y = chicken_house_pos.second;
-            //cout << "(" << x <<"," << y << ")\n";
-            
-            grid[x][y] = 1;
-        }
-
-
-
-    }
-
-
-
+    Find_M_Combination(0, 0);
+    cout << MIN << endl;
     return 0;
 }
