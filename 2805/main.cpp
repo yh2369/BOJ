@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <set>
 
 using namespace std;
 
@@ -58,9 +59,12 @@ int main()
 
     long long a = 0; long long b = max_height;
     long long height = 0;
+    set<long long> height_set;
+    
     while(true)
     {
         height = (a+b)/2LL;
+
         long long cut_tree_length = cut_tree(height_arr, height);
         if(cut_tree_length < M)
         {
@@ -69,6 +73,10 @@ int main()
         else if(cut_tree_length >M)
         {
             a = height;
+            if(b == (a + 1))
+            {
+                break;
+            }
         }
         else
         {
